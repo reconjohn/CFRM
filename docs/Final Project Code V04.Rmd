@@ -2,15 +2,18 @@
 title: "CFRM 521 Final Project"
 author: "Yohan Min & Peiyuan Song"
 date: "June 4, 2018"
-output: pdf_document
-header-includes: #allows you to add in your own Latex packages
-- \usepackage{float} #use the 'float' package
-- \floatplacement{figure}{H} #make every figure with caption = h
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{float}
+- \floatplacement{figure}{H}
 - \usepackage[fontsize=12pt]{scrextend}
 ---
 
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, echo = F}
 knitr::opts_chunk$set(echo = T, warning = F, message =  F)
 library(jsonlite)
 library(xts)
@@ -56,7 +59,7 @@ Price data for DJI Average can be retrieved using quantmod package, where we wil
 
 
 ```{r echo=F}
-strt = read.table("strt.txt",header = TRUE)
+strt = read.table("../data/strt.txt",header = TRUE)
 strt = strt[,-1:-2]
 strt[,1] = as.factor(strt[,1])
 #strt = ifelse(strt==0, "n", "y") 
@@ -81,7 +84,7 @@ Next, we will try methods described in the sample paper and try to replicate sim
 
 ## Results
 ### Naive Bayes Analysis
-```{r NB_code}
+```{r NB_code, echo = F}
 
 library(naivebayes)
 # training
@@ -113,7 +116,7 @@ WMT","striped") %>%
 \pagebreak
 
 ### Support Vector Regression Analysis
-```{r SVR_code}
+```{r SVR_code, echo = F}
 library(e1071)
 modelsvm = svm(DJI.Close~., dat_train)
 predYsvm = predict(modelsvm, dat_test[,-1])
@@ -126,7 +129,7 @@ summary(modelsvm)
 \pagebreak
 
 ### K-Nearest Neighbors Regression Analysis
-```{r KNN_code}
+```{r KNN_code, echo = F}
 
 library(class)
 knn.1 <-  knn(dat_train[,-1], dat_test[,-1], dat_train[,1], k=1)
@@ -141,7 +144,9 @@ knnv20 = sum(dat_test[,1] == knn.20)/length(dat_test[,1])
 # table(knn.1 ,dat_test[,1])
 # table(knn.5 ,dat_test[,1])
 # table(knn.20 ,dat_test[,1])
+```
 
+```{r echo=F}
 knn = t(data.frame("KNN1" = knnv1, "KNN5" = knnv5, "KNN20" = knnv20))
 colnames(knn) = "Test Accuracy"
 knn = round(rbind(knn,"Average" = mean(c(knnv1,knnv5,knnv20))),4)

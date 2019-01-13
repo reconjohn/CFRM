@@ -3,10 +3,10 @@ title: "CFRM 521 Final Project"
 author: "Yohan Min & Peiyuan Song"
 date: "June 4, 2018"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
     keep_md: true
-  pdf_document: default
 header-includes:
 - \usepackage{float}
 - \floatplacement{figure}{H}

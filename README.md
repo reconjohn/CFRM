@@ -3,7 +3,7 @@
 
 # Predicting Stock Price Movement Using Social Media Analysis
 
-##Abstract
+## Abstract
 The purpose of this final project is to understand the research and replicate methods used in Derik Tsui's paper. We tried the 3 methods, Naive bayes, Support vector regression and K-nearest neighbors regression to compare with the original analysis. It turns out the results are slightly different due to the fact that the data for these analyses may be different we assume. 
 
 

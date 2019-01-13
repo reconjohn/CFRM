@@ -1,3 +1,19 @@
+---
+title: "CFRM 521 Final Project"
+author: "Yohan Min & Peiyuan Song"
+date: "June 4, 2018"
+output:
+  html_document:
+    df_print: paged
+    keep_md: true
+  pdf_document: default
+header-includes:
+- \usepackage{float}
+- \floatplacement{figure}{H}
+- \usepackage[fontsize=12pt]{scrextend}
+---
+
+
 
 
 

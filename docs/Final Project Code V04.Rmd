@@ -6,6 +6,7 @@ output:
   pdf_document: default
   html_document:
     df_print: paged
+    keep_md: true
 header-includes:
 - \usepackage{float}
 - \floatplacement{figure}{H}
@@ -13,7 +14,7 @@ header-includes:
 ---
 
 
-```{r setup, include=FALSE, echo = F}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = T, warning = F, message =  F)
 library(jsonlite)
 library(xts)
@@ -26,7 +27,7 @@ list =  c("MMM","AXP","AAPL","BA","CAT","CVX","CSCO","KO","DIS","XOM","GE",
           "PG","TRV","UTX","UNH","VZ","V","WMT")
 
 ka = function(a,c,d) {
-    kable(a, format = "latex", caption = c, booktabs = T) %>%
+    kable(a, caption = c, booktabs = T) %>%
   kable_styling(latex_options = c("HOLD_position"))  %>%
   kable_styling(latex_options = "striped") %>%
   kable_styling(latex_options = d)
@@ -58,7 +59,7 @@ We will first need to convert our raw data into txt or csv format for the ease o
 Price data for DJI Average can be retrieved using quantmod package, where we will get four years of pricing data from 2013 - 2016. Calculating forward 3-day return using exactly same method described by the sample paper. Reason of using 3-day return is to smooth out short-term volatility and market noise. 
 
 
-```{r echo=F}
+```{r}
 strt = read.table("../data/strt.txt",header = TRUE)
 strt = strt[,-1:-2]
 strt[,1] = as.factor(strt[,1])
@@ -84,7 +85,7 @@ Next, we will try methods described in the sample paper and try to replicate sim
 
 ## Results
 ### Naive Bayes Analysis
-```{r NB_code, echo = F}
+```{r NB_code}
 
 library(naivebayes)
 # training
@@ -116,7 +117,7 @@ WMT","striped") %>%
 \pagebreak
 
 ### Support Vector Regression Analysis
-```{r SVR_code, echo = F}
+```{r SVR_code}
 library(e1071)
 modelsvm = svm(DJI.Close~., dat_train)
 predYsvm = predict(modelsvm, dat_test[,-1])
@@ -129,7 +130,7 @@ summary(modelsvm)
 \pagebreak
 
 ### K-Nearest Neighbors Regression Analysis
-```{r KNN_code, echo = F}
+```{r KNN_code}
 
 library(class)
 knn.1 <-  knn(dat_train[,-1], dat_test[,-1], dat_train[,1], k=1)
@@ -151,7 +152,7 @@ knn = t(data.frame("KNN1" = knnv1, "KNN5" = knnv5, "KNN20" = knnv20))
 colnames(knn) = "Test Accuracy"
 knn = round(rbind(knn,"Average" = mean(c(knnv1,knnv5,knnv20))),4)
 
-kable(knn, format = "latex", caption = "Test accuracy, compared KNN with 
+kable(knn, caption = "Test accuracy, compared KNN with 
       1,5, and 20", booktabs = T) %>%
   kable_styling(latex_options = c("hold_position"))  %>%
   kable_styling(latex_options = "striped")
@@ -175,7 +176,7 @@ Among the 3 methods, SVR and KNN perform better than NB with the test accuracy o
 
 ```{r echo=F}
 
-kable(com, format = "latex", caption = "Test accuracy, compared", booktabs = T) %>%
+kable(com, caption = "Test accuracy, compared", booktabs = T) %>%
   kable_styling(latex_options = c("hold_position"))  %>%
   kable_styling(latex_options = "striped")
 ```
@@ -183,7 +184,7 @@ kable(com, format = "latex", caption = "Test accuracy, compared", booktabs = T) 
 
 Also with respect to the individual stock predicting the market of stock price movement, our result shows that CAT has the highest test accuracy as 63.5% while AAPL has the lowest test accuracy of 30.5%. The overall discrepency between the original analysis and our results may be due to the difference of data used for analyzing the stock price movement. Since we can't figure out how the data is different and how the data the orginal analysis is based on was processed and cleaned, we are just guessing. But in general, we also found that NB performed less than the other two methods (i.e. SVR and KNN). 
 
-```{R echo=F}
+```{R}
 
 e = c()
 for(i in 2:30) e[i] = sum(prd==dat_test[,i])/length(dat_test[,1])
@@ -194,7 +195,7 @@ names(e) = c("MMM","AXP","AAPL","BA","CAT","CVX","CSCO","KO","DIS","XOM",
 e = round(data.frame(e) *100,1)
 colnames(e) = "Test accuracy(%)"
 
-kable(e, format = "latex", caption = "Test accuracy, compared", booktabs = T) %>%
+kable(e, caption = "Test accuracy, compared", booktabs = T) %>%
   kable_styling(latex_options = c("hold_position"))  %>%
   kable_styling(latex_options = "striped") %>%
   kable_styling(font_size = 9)

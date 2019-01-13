@@ -1,0 +1,206 @@
+---
+title: "CFRM 521 Final Project"
+author: "Yohan Min & Peiyuan Song"
+date: "June 4, 2018"
+output: pdf_document
+header-includes: #allows you to add in your own Latex packages
+- \usepackage{float} #use the 'float' package
+- \floatplacement{figure}{H} #make every figure with caption = h
+- \usepackage[fontsize=12pt]{scrextend}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message =  F)
+library(jsonlite)
+library(xts)
+library(quantmod)
+library(tidyverse)
+library(RefManageR)
+library(kableExtra)
+list =  c("MMM","AXP","AAPL","BA","CAT","CVX","CSCO","KO","DIS","XOM","GE",
+          "GS","HD","IBM","INTC","JNJ","JPM","MCD","MRK","MSFT","NKE","PFE",
+          "PG","TRV","UTX","UNH","VZ","V","WMT")
+
+ka = function(a,c,d) {
+    kable(a, format = "latex", caption = c, booktabs = T) %>%
+  kable_styling(latex_options = c("HOLD_position"))  %>%
+  kable_styling(latex_options = "striped") %>%
+  kable_styling(latex_options = d)
+}
+
+```
+
+
+# Predicting Stock Price Movement Using Social Media Analysis
+
+##Abstract
+The purpose of this final project is to understand the research and replicate methods used in Derik Tsui's paper. We tried the 3 methods, Naive bayes, Support vector regression and K-nearest neighbors regression to compare with the original analysis. It turns out the results are slightly different due to the fact that the data for these analyses may be different we assume. 
+
+
+## Background
+Today's social media platforms is one of the most fast and efficient way that transport information among people as well as the financial market. This brings us an idea of study the relationship between people's comments on social media platforms and same period financial market performance. Some platforms like StockTwits provide a good and detailed resource of comments database, which we can build our model directly based on it.
+
+Because of more and more financial institutions now start to adapt automated statistical techniques in their daily trading practices, the sample paper believes that further development of large-scale social media analysis will have the potential to introduce an additional source of investment alpha.
+
+Same as our sample paper, our underlying assumption is that a correlation between aggregated sentiment indicator and the market price reaction. Thus, our StockTwits data which represent market sentiment can provide a robust and meaningful information of real financial market situation. 
+
+
+## Method
+### Data
+We first download data from StockTwits, the data is only available in JSON format, and contains more than 566,000 comments data, covering 1592 stocks from the beginning of 2013 all the way through the end of 2016. Each data point is comprised of message body, timestamp, sentiment, and ticker symbols. 
+
+We will first need to convert our raw data into txt or csv format for the ease of process with R. By doing so, we will use jsonlite package and convert raw data into matrix format. During this process, we will remove all message body, and only leave useful information in our processed sentiment dataset.
+
+Price data for DJI Average can be retrieved using quantmod package, where we will get four years of pricing data from 2013 - 2016. Calculating forward 3-day return using exactly same method described by the sample paper. Reason of using 3-day return is to smooth out short-term volatility and market noise. 
+
+
+```{r echo=F}
+strt = read.table("strt.txt",header = TRUE)
+strt = strt[,-1:-2]
+strt[,1] = as.factor(strt[,1])
+#strt = ifelse(strt==0, "n", "y") 
+dat_train = strt[-757:-1005,]
+dat_test = strt[757:1005,]
+```
+
+
+Instead of using bag of words described in the sample paper, we will use number of bullish and bearish message in a single day. For example, if in a single day, bullish comments toward DJI's constituent stocks is more than that of bearish comments, we will identify that day as a day with bullish sentiment, and vice versa. That is, sentiment parameter = 1, when (# of bullish message) > (# of bearish message).
+
+
+```{r echo= F}
+
+ka(head(dat_train,15),"Cleaned data table (first 15 rows)","scale_down")
+
+```
+
+### Training 
+Next, we will try methods described in the sample paper and try to replicate similar results. Similar to the method as described in sample paper, we will avoid look ahead bias by set 1st 75% of historical data as training data, and the remaining 25% of data as the test set (data from Jan 2016 - Dec 2016). Trainings are all performed in dinfferent methods: NB, SVR and KNN. The parameters after each train are applied to test data to compare with the real value. 
+
+\newpage
+
+## Results
+### Naive Bayes Analysis
+```{r NB_code}
+
+library(naivebayes)
+# training
+nb = naive_bayes(DJI.Close~., data=as.data.frame(dat_train))
+#tables(nb)
+#summary(nb)
+
+# predicting
+#dat_test
+#predict(nb, dat_test[,-1], type = "class") 
+#predict(nb, dat_test[,-1], type = "prob")
+prd = predict(nb, dat_test[,-1], type = "class") 
+#dat_test[,1]==prd
+#sum(dat_test[,1]!=prd) # number of difference
+nbv = sum(dat_test[,1]==prd)/length(dat_test[,1]) # % of correct
+
+```
+
+```{r echo= F}
+
+ka(tables(nb),"NB train results in order of MMM,AXP,AAPL,BA,CAT,CVX,CSCO,KO,
+DIS,XOM,GE,GS,HD,IBM,INTC,JNJ,JPM,MCD,MRK,MSFT,NKE,PFE,PG,TRV,UTX,UNH,VZ,V,
+WMT","striped") %>% 
+  kable_styling(font_size = 10)
+
+```
+
+\newpage
+\pagebreak
+
+### Support Vector Regression Analysis
+```{r SVR_code}
+library(e1071)
+modelsvm = svm(DJI.Close~., dat_train)
+predYsvm = predict(modelsvm, dat_test[,-1])
+svrv = sum(dat_test[,1] == predYsvm)/length(dat_test[,1])
+summary(modelsvm)
+
+```
+
+
+\pagebreak
+
+### K-Nearest Neighbors Regression Analysis
+```{r KNN_code}
+
+library(class)
+knn.1 <-  knn(dat_train[,-1], dat_test[,-1], dat_train[,1], k=1)
+knn.5 <-  knn(dat_train[,-1], dat_test[,-1], dat_train[,1], k=5)
+knn.20 <- knn(dat_train[,-1], dat_test[,-1], dat_train[,1], k=20)
+
+## Let's calculate the proportion of correct classification for k = 1, 5 & 20 
+knnv1 = sum(dat_test[,1] == knn.1)/length(dat_test[,1]) # For knn = 1
+knnv5 = sum(dat_test[,1] == knn.5)/length(dat_test[,1])
+knnv20 = sum(dat_test[,1] == knn.20)/length(dat_test[,1])
+
+# table(knn.1 ,dat_test[,1])
+# table(knn.5 ,dat_test[,1])
+# table(knn.20 ,dat_test[,1])
+
+knn = t(data.frame("KNN1" = knnv1, "KNN5" = knnv5, "KNN20" = knnv20))
+colnames(knn) = "Test Accuracy"
+knn = round(rbind(knn,"Average" = mean(c(knnv1,knnv5,knnv20))),4)
+
+kable(knn, format = "latex", caption = "Test accuracy, compared KNN with 
+      1,5, and 20", booktabs = T) %>%
+  kable_styling(latex_options = c("hold_position"))  %>%
+  kable_styling(latex_options = "striped")
+
+```
+
+\newpage
+
+## Summary & Discussion
+
+```{r echo=F}
+
+com = t(data.frame("Naive Bayes" = nbv, "SVR" = svrv, "KNN" = knnv1))
+colnames(com) = "Test Accuracy"
+com = round(rbind(com,"Average" = mean(c(nbv,svrv,knnv1))),4)
+```
+
+
+Among the 3 methods, SVR and KNN perform better than NB with the test accuracy of `r round(com[2]*100,2)`% an `r round(com[3]*100,2)`% respectively. NB has the accuracy of `r round(com[1]*100,2)`%. These results are a bit different from the original anaysis that shows the results of accuracy for NB, SVR and KNN as 50.9%, 56.82% and 54.48%. 
+
+
+```{r echo=F}
+
+kable(com, format = "latex", caption = "Test accuracy, compared", booktabs = T) %>%
+  kable_styling(latex_options = c("hold_position"))  %>%
+  kable_styling(latex_options = "striped")
+```
+
+
+Also with respect to the individual stock predicting the market of stock price movement, our result shows that CAT has the highest test accuracy as 63.5% while AAPL has the lowest test accuracy of 30.5%. The overall discrepency between the original analysis and our results may be due to the difference of data used for analyzing the stock price movement. Since we can't figure out how the data is different and how the data the orginal analysis is based on was processed and cleaned, we are just guessing. But in general, we also found that NB performed less than the other two methods (i.e. SVR and KNN). 
+
+```{R echo=F}
+
+e = c()
+for(i in 2:30) e[i] = sum(prd==dat_test[,i])/length(dat_test[,1])
+e = e[-1]
+names(e) = c("MMM","AXP","AAPL","BA","CAT","CVX","CSCO","KO","DIS","XOM",
+             "GE","GS","HD","IBM","INTC","JNJ","JPM","MCD","MRK","MSFT",
+             "NKE", "PFE","PG","TRV","UTX","UNH","VZ","V","WMT")
+e = round(data.frame(e) *100,1)
+colnames(e) = "Test accuracy(%)"
+
+kable(e, format = "latex", caption = "Test accuracy, compared", booktabs = T) %>%
+  kable_styling(latex_options = c("hold_position"))  %>%
+  kable_styling(latex_options = "striped") %>%
+  kable_styling(font_size = 9)
+```
+
+Sentiment in social media could be the good pedictor to forecast the market price movement. Due to the improvement of computational power and analysis techniques it is possible to estimate the uncertain market behavior better than before. On the other hand, there is still a limit as there are always uncertain phenomena that is hard to catch. Although Our result shows that the test accuracy is slightly betther than 50%, including other statistical methods to improve the processes that we used in this report, will enhance the test accuracy. 
+
+Another limit from the database we are using is that messages are already identified as bullish and bearish by data provider. Some of messages are clear in their sentiment toward financial market while there are some of them can be considered as quite neutual. In that case, whether to catigorized them under bullish or bearish can be a very subjective decision and will produce bias. One way to improve is to consider add another category of neutral comments, so that we can collect all neutral and ambiguous comments under this category.
+
+
+\newpage
+
+## References
+1.	Derek G. Tsui. Predicting Stock Price Movement Using Social Media Analysis, Stanford University, 2016
